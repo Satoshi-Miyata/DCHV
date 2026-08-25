@@ -22,7 +22,7 @@ R = np.array([
 P_lower = -100.0
 P_upper = 100.0
 
-V_ref = 40
+V_ref = 370.0
 
 # =====================================================
 # Variable decomposition
