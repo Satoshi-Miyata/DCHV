@@ -22,6 +22,8 @@ R = np.array([
 P_lower = -100.0
 P_upper = 100.0
 
+V_ref = 42
+
 # =====================================================
 # Variable decomposition
 # x = [qd1,qd2,qd3, qs1,qs2,qs3, V1,V2,V3]
@@ -96,6 +98,15 @@ def h_constraint(x):
     return h
 
 # =====================================================
+# V_ref_constraint
+# =====================================================
+def vref_constraint(x):
+
+    qd, qs, V = split_x(x)
+
+    return V[0] - V_ref
+
+# =====================================================
 # g-(V)
 # =====================================================
 
@@ -159,6 +170,12 @@ h_nlc = NonlinearConstraint(
     0.0
 )
 
+vref_nlc = NonlinearConstraint(
+    vref_constraint,
+    0.0,
+    0.0
+)
+
 gminus_nlc = NonlinearConstraint(
     g_minus_constraint,
     0.0,
@@ -205,6 +222,7 @@ result = minimize(
     method="trust-constr",
     constraints=[
         h_nlc,
+        vref_nlc,
         gminus_nlc,
         gplus_nlc
     ],
