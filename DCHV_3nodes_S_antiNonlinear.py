@@ -157,5 +157,8 @@ print(qs)
 print("\nS")
 print(S)
 
+print("\n Supply - Demand")
+print(np.sum(qs) - np.sum(qd))
+
 print("\nObjective value")
 print(-result.fun)
