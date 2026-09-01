@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
+from scipy.optimize import least_squares
 
 # =====================================================
 # Parameters
@@ -223,3 +224,95 @@ print(np.sum(B - C))
 
 print("\nObjective Value")
 print(-result.fun)
+
+# ==================================================
+# 以下でSからVを求める
+# ==================================================
+
+
+# ==================================================
+# Resistance matrix
+# ==================================================
+
+R = np.array([
+    [0.0, 0.2, 0.1],
+    [0.2, 0.0, 0.5],
+    [0.1, 0.5, 0.0]
+])
+
+# ==================================================
+# Residual equations
+# ==================================================
+
+def residuals(V):
+
+    V1, V2, V3 = V
+
+    res = []
+
+    for i in range(3):
+        for j in range(3):
+
+            if i == j:
+                continue
+
+            model = (V[i]**2 - V[i]*V[j]) / R[i, j]
+
+            res.append(
+                model - S[i, j]
+            )
+
+    return np.array(res)
+
+# ==================================================
+# Initial guess
+# ==================================================
+
+V0 = np.array([1.0, 1.0, 1.0])
+
+# ==================================================
+# Solve
+# ==================================================
+
+result = least_squares(
+    residuals,
+    V0
+)
+
+# ==================================================
+# Check consistency
+# ==================================================
+
+tol = 1e-6
+
+max_residual = np.max(
+    np.abs(
+        residuals(result.x)
+    )
+)
+
+print("===== Result =====")
+
+if max_residual < tol:
+
+    print("解あり")
+
+    print("\nVoltage")
+
+    for i, v in enumerate(result.x):
+        print(f"V{i+1} = {v:.10f}")
+
+    print("\nMaximum residual")
+    print(max_residual)
+
+else:
+
+    print("解なし")
+
+    print("\nBest-fit voltage")
+
+    for i, v in enumerate(result.x):
+        print(f"V{i+1} = {v:.10f}")
+
+    print("\nMaximum residual")
+    print(max_residual)
