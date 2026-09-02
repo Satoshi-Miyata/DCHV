@@ -27,7 +27,7 @@ R = np.array([
     [0.1, 0.5, 0.0]
 ])
 
-max_iter = 20
+max_iter = 10
 
 # =====================================================
 # Flow indices
@@ -123,12 +123,21 @@ def solve_main_problem(S_hat_prev):
                 g.append( S[i,j] + S[j,i] )
         
         return np.array(g)
+    
+    #初期値の設定：Sはランダム,qdは10, qsはqd+sum(S)で初期化．初期値が等式を満足するようにするため．
+    S0_vec = np.random.uniform(0, 1, m)
+    S0 = build_S(S0_vec)
+
+    qd0 = np.ones(n) * 10.0
+    qs0 = np.zeros(n)
+    
+    for i in range(n):
+        qs0[i] = qd0[i] + np.sum(S0[i, :])
 
     x0 = np.concatenate([
-        np.ones(n) * 10.0,
-        np.ones(n) * 10.0,
-        np.random.rand(n**2 - n)
-        # np.zeros(n**2 - n)
+        qd0,
+        qs0,
+        S0_vec
     ])
 
     constraints = [
@@ -163,9 +172,9 @@ def solve_main_problem(S_hat_prev):
         bounds=bounds,
         constraints=constraints
     )
-    print("objective =", obj(x0))
-    print("balance   =", balance(x0))
-    print("physical  =", physical_constraint(x0))
+    print("Initial objective =", obj(x0))
+    print("Initial balance   =", balance(x0))
+    print("Initial physical  =", physical_constraint(x0))
 
     return result
 
