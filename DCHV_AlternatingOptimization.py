@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 from scipy.optimize import minimize
 
 #SとVを交互に最適化する手法．
@@ -127,13 +128,36 @@ def solve_main_problem(S_hat_prev):
         
         return np.array(g)
     
-    #初期値の設定：Sはランダム,qdは10, qsはqd+sum(S)で初期化．初期値が等式を満足するようにするため．
-    S0_vec = np.random.uniform(0, 1, m)
-    S0 = build_S(S0_vec)
+    # =====================================================
+    # 初期値の設定:S,qd,qs
+    # =====================================================
+    #Sとqdを設定, qsはqd+sum(S)で初期化．初期値が等式を満足するようにするため．
 
+    check_initial_S0 = 0
+
+    # #ランダム-------------------------------------------------
+    # S0_vec = np.random.uniform(0, 1, m)
+    # S0 = build_S(S0_vec)
+    # qd0 = np.ones(n) * 10.0
+    # check_initial_S0 += 1
+    # #-------------------------------------------------
+
+    #定数---------------------------------------------
+    S0_vec = np.ones(m)
+    S0 = build_S(S0_vec)
     qd0 = np.ones(n) * 10.0
-    qs0 = np.zeros(n)
+    check_initial_S0 += 1
+    #-------------------------------------------------
+
+    if check_initial_S0 > 1:
+        print("S0とqdの初期値の設定が複数あります.")
+        return sys.exit()
     
+    elif check_initial_S0 == 0:
+        print("S0とqdの初期値が設定されていません.")
+        return sys.exit()
+
+    qs0 = np.zeros(n)
     for i in range(n):
         qs0[i] = qd0[i] + np.sum(S0[i, :])
 
@@ -231,15 +255,35 @@ def physical_flow(V):
     return S_hat
 
 # =====================================================
-# Initial S_hat^(0)
-# from V^(0)=(1,1,1)
+# 初期値の設定:V0,S_hat_prev
 # =====================================================
 
+check_initial_V0 = 0
+
+#ランダム------------------------------------------
 V0 = np.random.rand(n)
+check_initial_V0 += 1
+#-------------------------------------------------
+
+# #任意の定数なV0------------------------------------
+# V0 = np.ones(n)
+# check_initial_V0 += 2
+# #-------------------------------------------------
+
+if check_initial_V0 > 2:
+    print("V0の初期値の設定が複数あります.")
+    sys.exit()
+
+elif check_initial_V0 == 0:
+    print("V0の初期値が設定されていません.")
+    sys.exit()
 
 S_hat_prev = physical_flow(V0)
 
-print("初期値の電圧V0をランダムに生成しました。")
+if check_initial_V0 % 2 == 1:
+    print("初期値の電圧V0をランダムに生成しました。")
+else:
+    print("初期値の電圧V0を定数で設定しました。")
 print("Initial V0 =", V0)
 print("Initial S_hat =\n", S_hat_prev)
 
