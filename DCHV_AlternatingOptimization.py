@@ -29,7 +29,7 @@ R = np.array([
     [0.1, 0.5, 0.0]
 ])
 
-max_iter = 200
+max_iter = 10
 
 error_history = []
 
@@ -261,7 +261,7 @@ def physical_flow(V):
 check_initial_V0 = 0
 
 #ランダム------------------------------------------
-V0 = np.random.rand(n)
+V0 = 100 * np.random.rand(n)
 check_initial_V0 += 1
 #-------------------------------------------------
 
@@ -310,9 +310,10 @@ for k in range(1, max_iter + 1):
     error_history.append(error)
 
 
-    # print(f"\n========== Iteration {k} ==========")
+    print(f"\n========== Iteration {k} ==========")
     # print("==Main problem result:")
     # print("qd =", qd, "\nqs =", qs, "\nS =\n", S)
+    # print("S_hat =\n", S_hat)
     # print("S+S.T =\n", S + S.T)
     # print("min(S+S.T) =", np.min(S + S.T), "\nmax(S+S.T) =", np.max(S + S.T))
     # print("計算成否:", main_result.success)
@@ -321,7 +322,8 @@ for k in range(1, max_iter + 1):
     # # print("main_result.status =", main_result.status)
     # print("---------------------------------")
     # print("==Voltage identification result:")
-    # print("V =", result_V.x)
+    print("V =", result_V.x)
+    print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
     # print("計算成否:", result_V.success)
     # print("関数値:", result_V.fun)
     # print("---------------------------------")
