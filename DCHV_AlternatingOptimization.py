@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 #SとVを交互に最適化する手法．
@@ -15,7 +16,7 @@ b = np.array([-0.3, -0.2, -0.1])
 c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
-rho = 10e-2
+rho = 10e2
 eps = 0.01
 
 P_min = -100.0
@@ -27,7 +28,9 @@ R = np.array([
     [0.1, 0.5, 0.0]
 ])
 
-max_iter = 10
+max_iter = 200
+
+error_history = []
 
 # =====================================================
 # Flow indices
@@ -118,7 +121,7 @@ def solve_main_problem(S_hat_prev):
         g = []
 
         for i in range(n):
-            for j in range(n):
+            for j in range(i+1, n):
 
                 g.append( S[i,j] + S[j,i] )
         
@@ -146,7 +149,7 @@ def solve_main_problem(S_hat_prev):
             "fun": balance
         },
         {
-            "type": "eq",
+            "type": "ineq",
             "fun": physical_constraint
         }
     ]
@@ -172,9 +175,9 @@ def solve_main_problem(S_hat_prev):
         bounds=bounds,
         constraints=constraints
     )
-    print("Initial objective =", obj(x0))
-    print("Initial balance   =", balance(x0))
-    print("Initial physical  =", physical_constraint(x0))
+    # print("Initial objective =", obj(x0))
+    # print("Initial balance   =", balance(x0))
+    # print("Initial physical  =", physical_constraint(x0))
 
     return result
 
@@ -204,13 +207,8 @@ def identify_voltage(S):
         x0=np.random.rand(n),
         method="BFGS"
     )
-    print("Voltage identification result:")
-    print("収束確認:", result.success)
-    print("関数値:", result.fun)
-    print("最適化変数:", result.x)
-    print("---------------------------------")
 
-    return result.x
+    return result
 
 
 # =====================================================
@@ -238,9 +236,11 @@ def physical_flow(V):
 # =====================================================
 
 V0 = np.random.rand(n)
-print("Initial V0 =", V0)
 
 S_hat_prev = physical_flow(V0)
+
+print("初期値の電圧V0をランダムに生成しました。")
+print("Initial V0 =", V0)
 print("Initial S_hat =\n", S_hat_prev)
 
 
@@ -250,51 +250,65 @@ print("Initial S_hat =\n", S_hat_prev)
 
 for k in range(1, max_iter + 1):
 
-    print(f"\n========== Iteration {k} ==========")
-
     # Step 1
     main_result = solve_main_problem(S_hat_prev)
-
     qd, qs, S = split_main(main_result.x)
-    print("qd =", qd, "qs =", qs, "\nS =\n", S)
-    print("S+S.T =\n", S + S.T)
-    print("min(S+S.T) =", np.min(S + S.T))
-    print("main_result.success =", main_result.success)
-    print("main_result.message =", main_result.message)
-    print("main_result.fun =", main_result.fun)
-    print("main_result.status =", main_result.status)
 
     # Step 2
-    V = identify_voltage(S)
-    print("V =", V)
+    result_V = identify_voltage(S)
+    V = result_V.x
 
     # Step 3
     S_hat = physical_flow(V)
-    print("S_hat =\n", S_hat)
 
     # Step 4
     error = np.max(np.abs(S - S_hat))
+    error_history.append(error)
 
-    print("max error =", error)
+
+    # print(f"\n========== Iteration {k} ==========")
+    # print("==Main problem result:")
+    # print("qd =", qd, "\nqs =", qs, "\nS =\n", S)
+    # print("S+S.T =\n", S + S.T)
+    # print("min(S+S.T) =", np.min(S + S.T), "\nmax(S+S.T) =", np.max(S + S.T))
+    # print("計算成否:", main_result.success)
+    # print("社会厚生:", -1 * main_result.fun)
+    # # print("main_result.message =", main_result.message)
+    # # print("main_result.status =", main_result.status)
+    # print("---------------------------------")
+    # print("==Voltage identification result:")
+    # print("V =", result_V.x)
+    # print("計算成否:", result_V.success)
+    # print("関数値:", result_V.fun)
+    # print("---------------------------------")
+    # print("max error =", error)
 
     if error < eps:
+        #epsのalpha倍以下の誤差が何回出たかを数える
+        alpha = 5
+        near_count = np.sum(
+            np.array(error_history) <= alpha * eps
+        )
+        first_near = np.where(
+            np.array(error_history) <= alpha * eps
+        )[0][0]
 
-        print("\nConverged")
+        print("\n====Converged: iteration =", k, "====")
+        print("収束性評価", near_count, "回")
+        print("最初に", alpha,"eps近傍に入ったのは", first_near,"回目")
 
-        print("\nqd")
-        print(qd)
-
-        print("\nqs")
-        print(qs)
-
-        print("\nS")
+        print("qd = ", qd)
+        print("qs = ", qs)
+        print("S = ")
         print(S)
+        print("min(S+S.T) =", np.min(S + S.T), "\nmax(S+S.T) =", np.max(S + S.T))
 
-        print("\nV")
-        print(V)
+        print("V = ", V)
+        print("計算可否:", result_V.success)
+        print("関数値:", result_V.fun)
 
-        print("\nS_hat")
-        print(S_hat)
+        # print("\nS_hat")
+        # print(S_hat)
 
         print("\nSocial welfare")
         print(welfare(qd, qs))
@@ -306,3 +320,19 @@ for k in range(1, max_iter + 1):
 else:
 
     print("\nMaximum iteration reached.")
+
+
+plt.figure(figsize=(8,5))
+
+plt.plot(
+    range(1, len(error_history)+1),
+    error_history,
+    marker='o'
+)
+
+plt.xlabel("Iteration")
+plt.ylabel("Max Error")
+plt.title("Convergence History")
+plt.grid(True)
+
+plt.show()
