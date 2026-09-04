@@ -29,9 +29,12 @@ R = np.array([
     [0.1, 0.5, 0.0]
 ])
 
-max_iter = 10
+max_iter = 200
 
+S_history = []
+S_hat_history = []
 error_history = []
+error12_history = []
 
 # =====================================================
 # Flow indices
@@ -297,6 +300,7 @@ for k in range(1, max_iter + 1):
     # Step 1
     main_result = solve_main_problem(S_hat_prev)
     qd, qs, S = split_main(main_result.x)
+    S_history.append(S.copy())
 
     # Step 2
     result_V = identify_voltage(S)
@@ -304,10 +308,13 @@ for k in range(1, max_iter + 1):
 
     # Step 3
     S_hat = physical_flow(V)
+    S_hat_history.append(S_hat.copy())
 
     # Step 4
     error = np.max(np.abs(S - S_hat))
     error_history.append(error)
+    error12 = np.abs(S[0, 1] - S_hat[0, 1])
+    error12_history.append(error12)
 
 
     print(f"\n========== Iteration {k} ==========")
@@ -321,7 +328,7 @@ for k in range(1, max_iter + 1):
     # # print("main_result.message =", main_result.message)
     # # print("main_result.status =", main_result.status)
     # print("---------------------------------")
-    # print("==Voltage identification result:")
+    print("==Voltage identification result:")
     print("V =", result_V.x)
     print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
     # print("計算成否:", result_V.success)
@@ -368,17 +375,74 @@ else:
     print("\nMaximum iteration reached.")
 
 
+S_history = np.array(S_history)
+S_hat_history = np.array(S_hat_history)
+
+#errorの収束履歴をプロット
 plt.figure(figsize=(8,5))
 
 plt.plot(
     range(1, len(error_history)+1),
     error_history,
-    marker='o'
+    marker='o',
+    label='Max Error'
+)
+
+plt.plot(
+    range(1, len(error12_history)+1),
+    error12_history,
+    marker='x',
+    label='Error S12'
 )
 
 plt.xlabel("Iteration")
-plt.ylabel("Max Error")
+plt.ylabel("Error")
 plt.title("Convergence History")
+plt.legend()
 plt.grid(True)
 
+
+#S12+S21の収束履歴をプロット
+plt.figure(figsize=(8,5))
+
+plt.plot(
+    range(1, len(S_history)+1),
+    S_history[:, 0, 1] + S_history[:, 1, 0],
+    marker='o',
+    label='S12 + S21'
+)
+
+plt.xlabel("Iteration")
+plt.ylabel("Loss@12")
+plt.title("Convergence of S12 + S21")
+plt.legend()
+plt.grid(True)
+
+
+#Sの収束履歴をプロット
+plt.figure(figsize=(12, 8))
+
+for (i, j) in (0, 1), (0, 2):
+
+    # S : 実線
+    plt.plot(
+        S_history[:, i, j],
+        linewidth=2,
+        label=f"S{i+1}{j+1}"
+    )
+
+    # S_hat : 破線
+    plt.plot(
+        S_hat_history[:, i, j],
+        "--",
+        linewidth=2,
+        label=f"Shat{i+1}{j+1}"
+    )
+
+plt.xlabel("Iteration")
+plt.ylabel("Flow")
+plt.title("Convergence of S and S_hat")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
 plt.show()
