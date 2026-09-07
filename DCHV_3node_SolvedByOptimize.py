@@ -211,7 +211,7 @@ result = minimize(
     bounds=bounds,
     options={
         "verbose": 3,
-        "maxiter": 3000
+        "maxiter": 1000
     }
 )
 

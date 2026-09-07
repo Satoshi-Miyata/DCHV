@@ -4,6 +4,7 @@ import sys
 from scipy.optimize import minimize
 
 #SとVを交互に最適化する手法．
+#さらにV最適化の式にV_baseを導入
 
 # =====================================================
 # Parameters
@@ -17,7 +18,10 @@ b = np.array([-0.3, -0.2, -0.1])
 c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
-rho = 10e2
+#主問題のペナルティパラメータ
+rho = 10e3
+#V最適化のペナルティパラメータ
+beta = 10e3
 eps = 0.01
 
 P_min = -100.0
@@ -29,7 +33,10 @@ R = np.array([
     [0.1, 0.5, 0.0]
 ])
 
-max_iter = 200
+#基準ノードの設定
+V_base = 100.0
+
+max_iter = 300
 
 S_history = []
 S_hat_history = []
@@ -219,12 +226,16 @@ def identify_voltage(S):
 
         value = 0.0
 
+        base = V[0] - V_base
+
         for i in range(n):
             for j in range(i + 1, n):
 
                 target = ( R[i, j] * (S[i, j] + S[j, i]) )
 
                 value += ( (V[i] - V[j])**2 - target )**2
+        
+        value += beta * base**2
 
         return value
 
@@ -263,8 +274,10 @@ def physical_flow(V):
 
 check_initial_V0 = 0
 
+V_rand_base = 1.0
+
 #ランダム------------------------------------------
-V0 = 100 * np.random.rand(n)
+V0 = V_rand_base * np.random.rand(n)
 check_initial_V0 += 1
 #-------------------------------------------------
 
@@ -317,7 +330,7 @@ for k in range(1, max_iter + 1):
     error12_history.append(error12)
 
 
-    print(f"\n========== Iteration {k} ==========")
+    # print(f"\n========== Iteration {k} ==========")
     # print("==Main problem result:")
     # print("qd =", qd, "\nqs =", qs, "\nS =\n", S)
     # print("S_hat =\n", S_hat)
@@ -328,9 +341,9 @@ for k in range(1, max_iter + 1):
     # # print("main_result.message =", main_result.message)
     # # print("main_result.status =", main_result.status)
     # print("---------------------------------")
-    print("==Voltage identification result:")
-    print("V =", result_V.x)
-    print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
+    # print("==Voltage identification result:")
+    # print("V =", result_V.x)
+    # print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
     # print("計算成否:", result_V.success)
     # print("関数値:", result_V.fun)
     # print("---------------------------------")
@@ -373,6 +386,15 @@ for k in range(1, max_iter + 1):
 else:
 
     print("\nMaximum iteration reached.")
+    print("qd = ", qd)
+    print("qs = ", qs)
+    print("S = ")
+    print(S)
+    print("min(S+S.T) =", np.min(S + S.T), "\nmax(S+S.T) =", np.max(S + S.T))
+
+    print("V = ", V)
+
+    print("max error =", error)
 
 
 S_history = np.array(S_history)
