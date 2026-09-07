@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 
 #SとVを交互に最適化する手法．
 #さらにV最適化の式にV_baseを導入
+#Vを算出する最適化の評価関数をS+Sではなく，Sの式に変更
 
 # =====================================================
 # Parameters
@@ -19,9 +20,9 @@ c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
 #主問題のペナルティパラメータ
-rho = 10e3
-#V最適化のペナルティパラメータ
-beta = 10e3
+rho = 10e2
+
+
 eps = 0.01
 
 P_min = -100.0
@@ -34,7 +35,7 @@ R = np.array([
 ])
 
 #基準ノードの設定
-V_base = 100.0
+V_base = 1.0
 
 max_iter = 300
 
@@ -226,24 +227,34 @@ def identify_voltage(S):
 
         value = 0.0
 
-        base = V[0] - V_base
-
         for i in range(n):
-            for j in range(i + 1, n):
+            for j in range(n):
+                    
+                    if i == j:
+                        continue
 
-                target = ( R[i, j] * (S[i, j] + S[j, i]) )
+                    target = ( V[i]**2 - V[i] * V[j] ) / R[i,j]
 
-                value += ( (V[i] - V[j])**2 - target )**2
-        
-        value += beta * base**2
+                    value += (S[i,j] - target)**2
 
         return value
+    
+    def V_const(V):
+        return V[0] - V_base
+    
+    constraint = [
+        {
+            "type": "eq",
+            "fun": V_const
+        }
+    ]
 
     result = minimize(
         J,
-        # x0=np.ones(n),
-        x0=np.random.rand(n),
-        method="BFGS"
+        x0 = np.full(n, V_base),
+        #x0=np.random.rand(n),
+        method="SLSQP",
+        constraints=constraint
     )
 
     return result
@@ -340,13 +351,13 @@ for k in range(1, max_iter + 1):
     # print("社会厚生:", -1 * main_result.fun)
     # # print("main_result.message =", main_result.message)
     # # print("main_result.status =", main_result.status)
-    # print("---------------------------------")
-    # print("==Voltage identification result:")
-    # print("V =", result_V.x)
-    # print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
-    # print("計算成否:", result_V.success)
-    # print("関数値:", result_V.fun)
-    # print("---------------------------------")
+    print("---------------------------------")
+    print("==Voltage identification result:")
+    print("V =", result_V.x)
+    print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
+    print("計算成否:", result_V.success)
+    print("関数値:", result_V.fun)
+    print("---------------------------------")
     # print("max error =", error)
 
     if error < eps:
