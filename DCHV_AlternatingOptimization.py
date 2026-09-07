@@ -20,7 +20,7 @@ c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
 #主問題のペナルティパラメータ
-rho = 10e2
+rho = 1700.0
 
 
 eps = 0.01
@@ -37,7 +37,12 @@ R = np.array([
 #基準ノードの設定
 V_base = 1.0
 
-max_iter = 300
+max_iter = 3000
+
+
+social_history = []
+penalty_history = []
+objective_history = []
 
 S_history = []
 S_hat_history = []
@@ -326,6 +331,17 @@ for k in range(1, max_iter + 1):
     qd, qs, S = split_main(main_result.x)
     S_history.append(S.copy())
 
+    B = a * qd + 0.5 * b * qd**2
+    C = c * qs + 0.5 * d * qs**2
+
+    social = np.sum(B - C)
+    penalty = rho * np.sum((S - S_hat_prev)**2)
+    objective = social - penalty
+
+    social_history.append(social)
+    penalty_history.append(penalty)
+    objective_history.append(objective)
+
     # Step 2
     result_V = identify_voltage(S)
     V = result_V.x
@@ -351,13 +367,13 @@ for k in range(1, max_iter + 1):
     # print("社会厚生:", -1 * main_result.fun)
     # # print("main_result.message =", main_result.message)
     # # print("main_result.status =", main_result.status)
-    print("---------------------------------")
-    print("==Voltage identification result:")
-    print("V =", result_V.x)
-    print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
-    print("計算成否:", result_V.success)
-    print("関数値:", result_V.fun)
-    print("---------------------------------")
+    # print("---------------------------------")
+    # print("==Voltage identification result:")
+    # print("V =", result_V.x)
+    # print("V1-V2 =", V[0] - V[1], "\nV1-V3 =", V[0] - V[2], "\nV2-V3 =", V[1] - V[2])
+    # print("計算成否:", result_V.success)
+    # print("関数値:", result_V.fun)
+    # print("---------------------------------")
     # print("max error =", error)
 
     if error < eps:
@@ -453,7 +469,7 @@ plt.grid(True)
 
 
 #Sの収束履歴をプロット
-plt.figure(figsize=(12, 8))
+plt.figure(figsize=(8, 5))
 
 for (i, j) in (0, 1), (0, 2):
 
@@ -478,4 +494,53 @@ plt.title("Convergence of S and S_hat")
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
+
+
+#社会厚生の履歴
+plt.figure(figsize=(8,5))
+
+plt.plot(
+    range(1, len(social_history)+1),
+    social_history,
+    marker='o',
+    label="Social Welfare"
+)
+
+plt.xlabel("iteration")
+plt.ylabel("welfare")
+plt.grid(True)
+plt.legend()
+
+#ペナルティ項の履歴
+plt.figure(figsize=(8,5))
+
+plt.plot(
+    range(1, len(penalty_history)+1),
+    penalty_history,
+    marker='o',
+    label="Penalty"
+)
+
+plt.xlabel("iteration")
+plt.ylabel("penalty")
+plt.grid(True)
+plt.legend()
+
+#主問題の評価関数の履歴
+plt.figure(figsize=(8,5))
+
+plt.plot(
+    range(1, len(objective_history)+1),
+    objective_history,
+    marker='o',
+    label="Objective"
+)
+
+plt.xlabel("iteration")
+plt.ylabel("objective")
+plt.grid(True)
+plt.legend()
+
+
+
 plt.show()
