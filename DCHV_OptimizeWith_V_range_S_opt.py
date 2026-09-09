@@ -21,12 +21,12 @@ R = np.array([
 ])
 
 # 潮流上限
-S_MAX = 1.0
-S_MIN = -1.0
+S_MAX = 100.0
+S_MIN = -100.0
 
 # 基準ノード電圧範囲
 V1_MIN = 0.95
-V1_MAX = 1.05
+V1_MAX = 100.05
 
 # 非対角要素
 flow_pairs = [
@@ -246,7 +246,7 @@ SW_opt = welfare(qd_opt, qs_opt)
 # =====================================================
 # 出力
 # =====================================================
-print("Initial_V :", x0[2*n:])
+print("Initial_V :", x0[2*n:3*n])
 
 if result.success == False:
     print("Optimization Failed")
