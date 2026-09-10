@@ -20,10 +20,10 @@ c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
 #主問題のペナルティパラメータ
-rho = 1700.0
+rho = 4000.0
 
 
-eps = 0.01
+eps = 0.003
 
 P_min = -100.0
 P_max = 100.0
@@ -36,8 +36,10 @@ R = np.array([
 
 #基準ノードの設定
 V_base = 1.0
+V_min = 0.95
+V_max = 1.05
 
-max_iter = 3000
+max_iter = 10000
 
 
 social_history = []
@@ -47,7 +49,7 @@ objective_history = []
 S_history = []
 S_hat_history = []
 error_history = []
-error12_history = []
+error_sum_history = []
 
 # =====================================================
 # Flow indices
@@ -244,22 +246,29 @@ def identify_voltage(S):
 
         return value
     
-    def V_const(V):
-        return V[0] - V_base
+    # def V_const(V):
+    #     return V[0] - V_base
     
-    constraint = [
-        {
-            "type": "eq",
-            "fun": V_const
-        }
-    ]
+    # constraint = [
+    #     {
+    #         "type": "eq",
+    #         "fun": V_const
+    #     }
+    # ]
+
+    bounds = [
+        (V_min,V_max),
+        (None, None),
+        (None, None)
+        ]
 
     result = minimize(
         J,
         x0 = np.full(n, V_base),
         #x0=np.random.rand(n),
         method="SLSQP",
-        constraints=constraint
+        bounds=bounds
+        #constraints=constraint
     )
 
     return result
@@ -353,8 +362,8 @@ for k in range(1, max_iter + 1):
     # Step 4
     error = np.max(np.abs(S - S_hat))
     error_history.append(error)
-    error12 = np.abs(S[0, 1] - S_hat[0, 1])
-    error12_history.append(error12)
+    error_sum = np.sum(np.abs(S - S_hat))
+    error_sum_history.append(error_sum)
 
 
     # print(f"\n========== Iteration {k} ==========")
@@ -406,6 +415,8 @@ for k in range(1, max_iter + 1):
         print("\nSocial welfare")
         print(welfare(qd, qs))
 
+        print("max error =", error)
+
         break
 
     S_hat_prev = S_hat
@@ -427,6 +438,13 @@ else:
 S_history = np.array(S_history)
 S_hat_history = np.array(S_hat_history)
 
+error_history = np.array(error_history)
+error_sum_history = np.array(error_sum_history)
+
+# print(type(error_history))
+error_history[:10] = np.nan
+error_sum_history[:10] = np.nan
+
 #errorの収束履歴をプロット
 plt.figure(figsize=(8,5))
 
@@ -438,10 +456,10 @@ plt.plot(
 )
 
 plt.plot(
-    range(1, len(error12_history)+1),
-    error12_history,
+    range(1, len(error_sum_history)+1),
+    error_sum_history,
     marker='x',
-    label='Error S12'
+    label='Error Sum'
 )
 
 plt.xlabel("Iteration")
