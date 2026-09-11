@@ -20,10 +20,10 @@ c = np.array([5.0, 10.0, 15.0])
 d = np.array([0.02, 0.04, 0.06])
 
 #主問題のペナルティパラメータ
-rho = 4000.0
+rho = 21750.0
 
 
-eps = 0.003
+eps = 0.001
 
 P_min = -100.0
 P_max = 100.0
@@ -39,7 +39,7 @@ V_base = 1.0
 V_min = 0.95
 V_max = 1.05
 
-max_iter = 10000
+max_iter = 3000
 
 
 social_history = []
@@ -50,6 +50,10 @@ S_history = []
 S_hat_history = []
 error_history = []
 error_sum_history = []
+
+print("rho=",rho)
+print("epsilon=",eps)
+print("max iter=",max_iter)
 
 # =====================================================
 # Flow indices
@@ -467,7 +471,6 @@ plt.ylabel("Error")
 plt.title("Convergence History")
 plt.legend()
 plt.grid(True)
-
 
 #S12+S21の収束履歴をプロット
 plt.figure(figsize=(8,5))
