@@ -226,6 +226,9 @@ print("\n===== Optimization Result =====")
 print("Success :", result.success)
 print("Message :", result.message)
 
+print("\nResistance Matrix R")
+print(R)
+
 print("\nqd*")
 print(qd_opt)
 
@@ -243,6 +246,9 @@ print(S_opt + S_opt.T)
 
 print("\nSocial Welfare")
 print(welfare(qd_opt, qs_opt))
+
+print("\nPrice")
+print(a + b * qd_opt)
 
 # 収支確認
 print("\nBalance Check")
